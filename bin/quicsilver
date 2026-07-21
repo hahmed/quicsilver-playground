@@ -5,11 +5,11 @@ ENV["RAILS_ENV"] ||= "development"
 
 require_relative "../config/environment"
 require "quicsilver"
-require "quicsilver_playground/web_transport_certificate"
+require "quicsilver/rails/dev_web_transport_certificate"
 
 host = ENV.fetch("QUICSILVER_HOST", "0.0.0.0")
 port = Integer(ENV.fetch("QUICSILVER_PORT", "4433"))
-certificate = QuicsilverPlayground::WebTransportCertificate.fetch
+certificate = Quicsilver::Rails::DevWebTransportCertificate.fetch
 cert_file = ENV.fetch("WEBTRANSPORT_CERT", certificate.cert_file)
 key_file = ENV.fetch("WEBTRANSPORT_KEY", certificate.key_file)
 

@@ -11,7 +11,7 @@ export async function connect(url, options = {}) {
 }
 
 function certificateOptionsFromMeta() {
-  const meta = document.querySelector('meta[name="wt-cert-hash"]')
+  const meta = document.querySelector('meta[name="quicsilver-webtransport-certificate-sha256"]')
   if (!meta) return {}
 
   return {
