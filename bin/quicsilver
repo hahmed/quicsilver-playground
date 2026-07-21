@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+ENV["RAILS_ENV"] ||= "development"
+
+require_relative "../config/environment"
+require "quicsilver"
+require "quicsilver_playground/web_transport_certificate"
+
+host = ENV.fetch("QUICSILVER_HOST", "0.0.0.0")
+port = Integer(ENV.fetch("QUICSILVER_PORT", "4433"))
+certificate = QuicsilverPlayground::WebTransportCertificate.fetch
+cert_file = ENV.fetch("WEBTRANSPORT_CERT", certificate.cert_file)
+key_file = ENV.fetch("WEBTRANSPORT_KEY", certificate.key_file)
+
+configuration = Quicsilver::Transport::Configuration.new(
+  cert_file,
+  key_file,
+  idle_timeout_ms: 120_000,
+  keep_alive_interval_ms: 20_000,
+  max_unidirectional_streams: 100
+)
+
+puts "=> Booting Quicsilver HTTP/3"
+puts "=> Rails #{Rails.version} application starting in #{Rails.env}"
+puts "=> Listening on udp://#{host}:#{port}"
+puts "=> TLS cert: #{cert_file}"
+puts "=> Ctrl-C to shutdown"
+
+server = Quicsilver::Server.new(
+  port,
+  address: host,
+  app: Rails.application,
+  server_configuration: configuration
+)
+
+server.start

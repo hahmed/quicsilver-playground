@@ -32,6 +32,8 @@ window.runEcho = async function () {
     }
 
     const url = new URL("/transports/echo", window.location.href)
+    url.protocol = "https:"
+    url.port = window.QUICSILVER_PORT || "4433"
     log(`connecting to ${url}`)
 
     const transport = await connect(url.toString())
