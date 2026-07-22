@@ -1,0 +1,66 @@
+<main class="min-h-screen bg-[#070A12] text-white">
+  <div class="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(34,211,238,0.18),transparent_30%),radial-gradient(circle_at_80%_10%,rgba(129,140,248,0.16),transparent_28%)]"></div>
+
+  <header class="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6 sm:px-8">
+    <%= link_to root_path, class: "flex items-center gap-3" do %>
+      <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-400 text-sm font-black text-slate-950">Q</div>
+      <div>
+        <p class="text-sm font-bold leading-none">Quicsilver</p>
+        <p class="mt-1 text-xs text-slate-500">Docs over HTTP/3</p>
+      </div>
+    <% end %>
+
+    <%= link_to "Open protocol lab", root_path, class: "rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.08]" %>
+  </header>
+
+  <section class="mx-auto w-full max-w-6xl px-6 pb-12 pt-8 sm:px-8 lg:pt-14">
+    <div class="max-w-3xl">
+      <div class="mb-6 inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-200">
+        Standard Rails routes, controllers, views, Turbo, and assets
+      </div>
+
+      <h1 class="text-balance text-5xl font-black tracking-tight sm:text-6xl">
+        Field notes for Rails over HTTP/3.
+      </h1>
+
+      <p class="mt-6 text-lg leading-8 text-slate-300">
+        These docs are intentionally ordinary Rails pages. Follow the links, vote with Turbo,
+        and inspect DevTools to see normal HTML navigation and assets served over HTTP/3.
+      </p>
+    </div>
+  </section>
+
+  <section class="mx-auto grid w-full max-w-6xl gap-6 px-6 pb-20 sm:px-8 lg:grid-cols-[0.72fr_1.28fr]">
+    <aside class="rounded-[2rem] border border-white/10 bg-white/[0.045] p-6 self-start">
+      <p class="text-sm font-bold text-white">What this shows</p>
+      <div class="mt-5 grid gap-3 text-sm text-slate-400">
+        <div class="rounded-2xl border border-white/10 bg-black/20 p-4">Rails resource routing with <code class="text-cyan-200">resources :docs</code></div>
+        <div class="rounded-2xl border border-white/10 bg-black/20 p-4">Server-rendered ERB pages over H3</div>
+        <div class="rounded-2xl border border-white/10 bg-black/20 p-4">Turbo-powered feedback buttons</div>
+        <div class="rounded-2xl border border-white/10 bg-black/20 p-4">Asset pipeline styling and JavaScript</div>
+      </div>
+    </aside>
+
+    <div class="grid gap-8">
+      <% @doc_pages_by_category.each do |category, pages| %>
+        <section>
+          <h2 class="mb-4 text-sm font-black uppercase tracking-[0.24em] text-slate-500"><%= category %></h2>
+          <div class="grid gap-4 md:grid-cols-2">
+            <% pages.each do |page| %>
+              <%= link_to doc_path(page), class: "group rounded-[1.75rem] border border-white/10 bg-white/[0.055] p-6 transition hover:-translate-y-0.5 hover:border-cyan-300/30 hover:bg-white/[0.08]" do %>
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <p class="text-xl font-black text-white"><%= page.title %></p>
+                    <p class="mt-3 text-sm leading-6 text-slate-400"><%= page.summary %></p>
+                  </div>
+                  <span class="rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-bold text-cyan-300"><%= page.score %></span>
+                </div>
+                <p class="mt-5 text-sm font-bold text-cyan-300 opacity-80 transition group-hover:opacity-100">Read note →</p>
+              <% end %>
+            <% end %>
+          </div>
+        </section>
+      <% end %>
+    </div>
+  </section>
+</main>

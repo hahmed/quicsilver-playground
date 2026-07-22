@@ -1,0 +1,5 @@
+<%= turbo_stream.replace dom_id(@doc_page, :votes) do %>
+  <%= turbo_frame_tag dom_id(@doc_page, :votes) do %>
+    <%= render "docs/votes", doc_page: @doc_page %>
+  <% end %>
+<% end %>

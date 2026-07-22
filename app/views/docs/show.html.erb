@@ -1,0 +1,48 @@
+<main class="min-h-screen bg-[#070A12] text-white">
+  <div class="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(34,211,238,0.16),transparent_30%),radial-gradient(circle_at_80%_10%,rgba(129,140,248,0.14),transparent_28%)]"></div>
+
+  <header class="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6 sm:px-8">
+    <%= link_to docs_path, class: "flex items-center gap-3" do %>
+      <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-400 text-sm font-black text-slate-950">Q</div>
+      <div>
+        <p class="text-sm font-bold leading-none">Quicsilver Docs</p>
+        <p class="mt-1 text-xs text-slate-500"><%= @doc_page.category %></p>
+      </div>
+    <% end %>
+
+    <div class="flex items-center gap-2">
+      <%= link_to "All docs", docs_path, class: "rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.08]" %>
+      <%= link_to "Protocol lab", root_path, class: "rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.08]" %>
+    </div>
+  </header>
+
+  <section class="mx-auto grid w-full max-w-6xl gap-8 px-6 pb-20 pt-8 sm:px-8 lg:grid-cols-[0.78fr_1.22fr] lg:pt-14">
+    <aside class="self-start rounded-[2rem] border border-white/10 bg-white/[0.045] p-6 lg:sticky lg:top-6">
+      <p class="text-xs font-black uppercase tracking-[0.24em] text-cyan-300"><%= @doc_page.category %></p>
+      <h1 class="mt-4 text-4xl font-black tracking-tight text-white"><%= @doc_page.title %></h1>
+      <p class="mt-4 text-sm leading-6 text-slate-400"><%= @doc_page.summary %></p>
+
+      <%= turbo_frame_tag dom_id(@doc_page, :votes), class: "mt-6 block" do %>
+        <%= render "votes", doc_page: @doc_page %>
+      <% end %>
+    </aside>
+
+    <article class="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur sm:p-8">
+      <div class="prose prose-invert max-w-none prose-p:text-slate-300 prose-p:leading-8 prose-li:text-slate-300 prose-strong:text-white prose-code:text-cyan-200 prose-code:before:content-none prose-code:after:content-none prose-pre:border prose-pre:border-white/10 prose-pre:bg-[#02040A]">
+        <%= simple_format(@doc_page.body) %>
+      </div>
+    </article>
+  </section>
+
+  <section class="mx-auto w-full max-w-6xl px-6 pb-20 sm:px-8">
+    <h2 class="mb-4 text-sm font-black uppercase tracking-[0.24em] text-slate-500">More notes</h2>
+    <div class="grid gap-4 md:grid-cols-4">
+      <% @related_pages.each do |page| %>
+        <%= link_to doc_path(page), class: "rounded-3xl border border-white/10 bg-white/[0.045] p-5 transition hover:border-cyan-300/30 hover:bg-white/[0.08]" do %>
+          <p class="text-sm font-black text-white"><%= page.title %></p>
+          <p class="mt-2 text-xs leading-5 text-slate-500"><%= page.summary %></p>
+        <% end %>
+      <% end %>
+    </div>
+  </section>
+</main>

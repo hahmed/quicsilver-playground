@@ -10,7 +10,22 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_22_143000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_22_150000) do
+  create_table "doc_pages", force: :cascade do |t|
+    t.string "title", null: false
+    t.string "slug", null: false
+    t.string "category", null: false
+    t.text "summary", null: false
+    t.text "body", null: false
+    t.integer "position", default: 0, null: false
+    t.integer "upvotes", default: 0, null: false
+    t.integer "downvotes", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category", "position"], name: "index_doc_pages_on_category_and_position"
+    t.index ["slug"], name: "index_doc_pages_on_slug", unique: true
+  end
+
   create_table "messages", force: :cascade do |t|
     t.string "author", null: false
     t.text "body", null: false
