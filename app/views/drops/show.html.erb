@@ -1,0 +1,122 @@
+<main class="min-h-screen overflow-hidden bg-[#050711] text-white">
+  <div id="drop-effects" class="pointer-events-none fixed inset-0 z-40 overflow-hidden"></div>
+  <div class="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(163,230,53,0.20),transparent_28%),radial-gradient(circle_at_80%_8%,rgba(236,72,153,0.18),transparent_30%),radial-gradient(circle_at_50%_92%,rgba(34,211,238,0.14),transparent_35%)]"></div>
+
+  <header class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 sm:px-8">
+    <%= link_to root_path, class: "flex items-center gap-3" do %>
+      <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-lime-300 text-sm font-black text-slate-950">QD</div>
+      <div>
+        <p class="text-sm font-bold leading-none">QUIC//DROP</p>
+        <p class="mt-1 text-xs text-slate-500">ET90 launch room</p>
+      </div>
+    <% end %>
+
+    <div class="flex items-center gap-2">
+      <%= link_to "Docs", docs_path, class: "rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.08]" %>
+      <%= link_to "Protocol lab", root_path, class: "rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.08]" %>
+    </div>
+  </header>
+
+  <section class="mx-auto grid w-full max-w-7xl gap-8 px-6 pb-10 pt-8 sm:px-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:pt-10">
+    <div>
+      <div class="mb-5 inline-flex rounded-full border border-lime-300/20 bg-lime-300/10 px-4 py-2 text-sm font-semibold text-lime-200">
+        ET90 goes live tonight
+      </div>
+
+      <h1 class="max-w-4xl text-balance text-5xl font-black tracking-tight sm:text-7xl lg:text-8xl">
+        The final-minute boot.
+      </h1>
+
+      <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+        A limited football boot drop built around one moment: stoppage time, floodlights,
+        noise, and the finish everyone remembers.
+      </p>
+
+      <div class="mt-8 grid max-w-2xl grid-cols-3 gap-3">
+        <div class="rounded-3xl border border-white/10 bg-white/[0.05] p-4">
+          <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Watching</p>
+          <p id="drop-watching" class="mt-2 text-2xl font-black text-white"><%= number_with_delimiter(@drop_product.watching_count) %></p>
+        </div>
+        <div class="rounded-3xl border border-white/10 bg-white/[0.05] p-4">
+          <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Claimed</p>
+          <p id="drop-claimed" class="mt-2 text-2xl font-black text-lime-300"><%= @drop_product.claimed_count %></p>
+        </div>
+        <div class="rounded-3xl border border-white/10 bg-white/[0.05] p-4">
+          <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Next roar</p>
+          <p id="drop-next-milestone" class="mt-2 text-2xl font-black text-fuchsia-300"><%= @drop_product.next_milestone %></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="relative">
+      <div class="absolute -inset-8 rounded-[3rem] bg-lime-300/10 blur-3xl"></div>
+      <%= image_tag @drop_product.hero_image_path, id: "drop-hero-image", class: "relative aspect-[4/3] w-full rounded-[2rem] border border-white/10 object-cover shadow-2xl shadow-black/40 transition duration-300" %>
+    </div>
+  </section>
+
+  <section class="mx-auto w-full max-w-7xl px-6 pb-8 sm:px-8">
+    <article class="rounded-[2rem] border border-white/10 bg-white/[0.055] p-5 shadow-2xl shadow-black/20 backdrop-blur">
+      <div class="mb-5 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="text-sm font-bold text-white">Choose your colorway</p>
+          <p class="mt-1 text-xs text-slate-500">Tap a boot to preview it. Claim before the room clears the stock.</p>
+        </div>
+        <span class="rounded-full bg-lime-300/10 px-3 py-1 text-xs font-bold text-lime-200"><%= @drop_product.tagline %></span>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-4">
+        <% @drop_product.drop_variants.each do |variant| %>
+          <article class="rounded-[1.5rem] border border-white/10 bg-black/20 p-3 transition hover:-translate-y-0.5 hover:border-lime-300/50" data-drop-variant-id="<%= variant.id %>">
+            <button type="button" onclick="swapDropHero('<%= asset_path(variant.image_path) %>')" class="group block w-full overflow-hidden rounded-[1.15rem] text-left">
+              <%= image_tag variant.image_path, class: "aspect-[4/3] w-full rounded-[1.15rem] object-cover transition group-hover:scale-[1.03]" %>
+            </button>
+            <div class="mt-4 px-1">
+              <div class="flex items-center justify-between gap-3">
+                <h2 class="font-black text-white"><%= variant.name %></h2>
+                <span class="rounded-full bg-white/[0.06] px-2 py-1 text-xs font-bold text-slate-300"><span data-variant-stock><%= variant.stock %></span> left</span>
+              </div>
+              <p class="mt-1 text-xs text-slate-500"><%= variant.name %> colorway · <span data-variant-claimed><%= variant.claimed_count %></span> claimed</p>
+              <button type="button" onclick="claimDropVariant(<%= variant.id %>)" class="mt-4 w-full rounded-full bg-lime-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-lime-200">Claim <%= variant.name %></button>
+            </div>
+          </article>
+        <% end %>
+      </div>
+    </article>
+  </section>
+
+  <section class="mx-auto grid w-full max-w-7xl gap-6 px-6 pb-20 sm:px-8 lg:grid-cols-2">
+    <article class="rounded-[2rem] border border-white/10 bg-white/[0.045] p-5">
+      <p class="text-sm font-bold text-white">Send hype</p>
+      <p class="mt-1 text-xs text-slate-500">Make noise in the room.</p>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <% ["🔥", "🚀", "💎", "👀", "⚡", "✨"].each do |emoji| %>
+          <button type="button" onclick="sendDropReaction('<%= emoji %>')" class="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-2xl transition hover:-translate-y-0.5 hover:bg-white/[0.08]"><%= emoji %></button>
+        <% end %>
+      </div>
+
+      <form class="mt-5 flex gap-3" onsubmit="sendDropComment(event)">
+        <input name="body" required maxlength="180" placeholder="Say something to the drop room…" class="min-w-0 flex-1 rounded-full border border-white/10 bg-black/30 px-5 py-3 text-sm text-white placeholder:text-slate-600 outline-none ring-lime-300/30 transition focus:ring-4">
+        <button type="submit" class="rounded-full bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-300">Send</button>
+      </form>
+    </article>
+
+    <article class="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-2xl shadow-black/20 backdrop-blur">
+      <div class="mb-5 flex items-center justify-between gap-4">
+        <div>
+          <p class="text-sm font-bold text-white">Live activity</p>
+          <p class="mt-1 text-xs text-slate-500">The room moves as people claim, react, and talk.</p>
+        </div>
+        <button type="button" onclick="loadDropActivity()" class="rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-bold text-white transition hover:bg-white/[0.09]">Refresh</button>
+      </div>
+
+      <div id="drop-activity" class="grid max-h-[26rem] gap-3 overflow-auto pr-1">
+        <% @drop_events.each do |event| %>
+          <article class="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <p class="text-sm text-slate-300"><span class="mr-2"><%= event.emoji %></span><%= event.actor.presence || "system" %> <%= event.body %></p>
+            <p class="mt-2 text-xs text-slate-600"><%= time_ago_in_words(event.created_at) %> ago</p>
+          </article>
+        <% end %>
+      </div>
+    </article>
+  </section>
+</main>

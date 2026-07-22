@@ -28,6 +28,22 @@ function csrfToken() {
   return document.querySelector("meta[name='csrf-token']")?.content
 }
 
+async function fetchJson(url, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      Accept: "application/json",
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(csrfToken() ? { "X-CSRF-Token": csrfToken() } : {}),
+      ...(options.headers || {})
+    }
+  })
+
+  const payload = await response.json()
+  if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`)
+  return payload
+}
+
 window.clearTransportLog = clearTransportLog
 
 window.runEcho = async function () {
@@ -77,10 +93,7 @@ window.runApiStatus = async function () {
   if (output) output.textContent = "Requesting /api/status ..."
 
   try {
-    const response = await fetch("/api/status", {
-      headers: { Accept: "application/json" }
-    })
-    const payload = await response.json()
+    const payload = await fetchJson("/api/status")
     if (output) output.textContent = JSON.stringify(payload, null, 2)
   } catch (error) {
     if (output) output.textContent = `${error.name || "Error"}: ${error.message || error}`
@@ -91,17 +104,14 @@ async function loadMessages() {
   const list = document.getElementById("messages-list")
   if (!list) return
 
-  const response = await fetch("/api/messages", {
-    headers: { Accept: "application/json" }
-  })
-  const messages = await response.json()
+  const messages = await fetchJson("/api/messages")
 
   if (messages.length === 0) {
     list.innerHTML = `<p class="text-sm text-slate-500">No messages yet. Post the first one over the JSON API.</p>`
     return
   }
 
-  list.innerHTML = messages.map((message) => `
+  list.innerHTML = messages.map(() => `
     <article class="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
       <div class="flex items-center justify-between gap-3">
         <p class="text-sm font-bold text-white"></p>
@@ -134,33 +144,176 @@ window.createMessage = async function (event) {
   const error = document.getElementById("messages-error")
   if (error) error.textContent = ""
 
-  const body = {
-    message: {
-      author: form.elements.author.value,
-      body: form.elements.body.value
-    }
-  }
-
   try {
-    const response = await fetch("/api/messages", {
+    await fetchJson("/api/messages", {
       method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        "X-CSRF-Token": csrfToken()
-      },
-      body: JSON.stringify(body)
+      body: JSON.stringify({
+        message: {
+          author: form.elements.author.value,
+          body: form.elements.body.value
+        }
+      })
     })
-
-    if (!response.ok) {
-      const payload = await response.json()
-      throw new Error(payload.error || `HTTP ${response.status}`)
-    }
 
     form.reset()
     await loadMessages()
   } catch (errorValue) {
     if (error) error.textContent = `${errorValue.name || "Error"}: ${errorValue.message || errorValue}`
+  }
+}
+
+function renderDropStats(product) {
+  const watching = document.getElementById("drop-watching")
+  const claimed = document.getElementById("drop-claimed")
+  const nextMilestone = document.getElementById("drop-next-milestone")
+
+  if (watching) watching.textContent = Number(product.watching_count).toLocaleString()
+  if (claimed) claimed.textContent = product.claimed_count
+  if (nextMilestone) nextMilestone.textContent = product.next_milestone
+
+  product.variants.forEach((variant) => {
+    const card = document.querySelector(`[data-drop-variant-id="${variant.id}"]`)
+    if (!card) return
+
+    const stock = card.querySelector("[data-variant-stock]")
+    const variantClaimed = card.querySelector("[data-variant-claimed]")
+    if (stock) stock.textContent = variant.stock
+    if (variantClaimed) variantClaimed.textContent = variant.claimed_count
+  })
+}
+
+function renderDropActivity(events) {
+  const list = document.getElementById("drop-activity")
+  if (!list) return
+
+  list.innerHTML = events.map((event) => `
+    <article class="rounded-2xl border border-white/10 bg-black/20 p-4">
+      <p class="text-sm text-slate-300"><span class="mr-2"></span><span data-actor></span> <span data-body></span></p>
+      <p class="mt-2 text-xs text-slate-600" data-time></p>
+    </article>
+  `).join("")
+
+  list.querySelectorAll("article").forEach((article, index) => {
+    const event = events[index]
+    article.querySelector("span").textContent = event.emoji || "•"
+    article.querySelector("[data-actor]").textContent = event.actor || "system"
+    article.querySelector("[data-body]").textContent = event.body
+    article.querySelector("[data-time]").textContent = new Date(event.created_at).toLocaleTimeString()
+  })
+}
+
+function burstDropEmoji(emoji) {
+  const layer = document.getElementById("drop-effects")
+  if (!layer) return
+
+  for (let index = 0; index < 10; index += 1) {
+    const node = document.createElement("div")
+    node.textContent = emoji
+    node.style.position = "absolute"
+    node.style.left = `${20 + Math.random() * 60}%`
+    node.style.bottom = `${5 + Math.random() * 25}%`
+    node.style.fontSize = `${24 + Math.random() * 34}px`
+    node.style.opacity = "0"
+    node.style.transform = "translateY(40px) scale(0.8)"
+    node.style.transition = "transform 1200ms ease-out, opacity 1200ms ease-out"
+    layer.appendChild(node)
+
+    requestAnimationFrame(() => {
+      node.style.opacity = "1"
+      node.style.transform = `translate(${(Math.random() - 0.5) * 180}px, -${180 + Math.random() * 240}px) scale(${1 + Math.random()}) rotate(${(Math.random() - 0.5) * 50}deg)`
+    })
+
+    setTimeout(() => node.remove(), 1300)
+  }
+}
+
+function sparkDropMilestone() {
+  burstDropEmoji("✨")
+  setTimeout(() => burstDropEmoji("⚡"), 120)
+}
+
+window.swapDropHero = function (src) {
+  const image = document.getElementById("drop-hero-image")
+  if (!image) return
+
+  image.style.opacity = "0.35"
+  image.style.transform = "scale(0.985)"
+
+  setTimeout(() => {
+    image.src = src
+    image.onload = () => {
+      image.style.opacity = "1"
+      image.style.transform = "scale(1)"
+    }
+  }, 120)
+}
+
+window.loadDrop = async function () {
+  if (!document.getElementById("drop-activity")) return
+
+  const product = await fetchJson("/api/drop")
+  renderDropStats(product)
+}
+
+window.loadDropActivity = async function () {
+  if (!document.getElementById("drop-activity")) return
+
+  const events = await fetchJson("/api/drop_events")
+  renderDropActivity(events)
+}
+
+window.claimDropVariant = async function (variantId) {
+  try {
+    const before = Number(document.getElementById("drop-claimed")?.textContent || 0)
+    const payload = await fetchJson("/api/drop_claims", {
+      method: "POST",
+      body: JSON.stringify({ variant_id: variantId })
+    })
+
+    renderDropStats(payload.product)
+    await loadDropActivity()
+    burstDropEmoji(payload.claimed ? "💎" : "👀")
+
+    const after = Number(payload.product.claimed_count)
+    if (after > before && [25, 50, 100, 250, 500, 1000].includes(after)) sparkDropMilestone()
+  } catch (error) {
+    burstDropEmoji("🫠")
+    console.error(error)
+  }
+}
+
+window.sendDropReaction = async function (emoji) {
+  try {
+    const payload = await fetchJson("/api/drop_events", {
+      method: "POST",
+      body: JSON.stringify({ kind: "reaction", emoji })
+    })
+
+    renderDropStats(payload.product)
+    await loadDropActivity()
+    burstDropEmoji(emoji)
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+window.sendDropComment = async function (event) {
+  event.preventDefault()
+  const form = event.currentTarget
+  const body = form.elements.body.value
+
+  try {
+    const payload = await fetchJson("/api/drop_events", {
+      method: "POST",
+      body: JSON.stringify({ kind: "comment", actor: "you", body })
+    })
+
+    renderDropStats(payload.product)
+    form.reset()
+    await loadDropActivity()
+    burstDropEmoji("💬")
+  } catch (error) {
+    console.error(error)
   }
 }
 
@@ -171,4 +324,9 @@ document.addEventListener("turbo:load", () => {
   loadMessages().catch((error) => {
     writeTo("messages-error", `${error.name || "Error"}: ${error.message || error}`, { append: false })
   })
+
+  if (document.getElementById("drop-activity")) {
+    window.loadDrop().catch(console.error)
+    window.loadDropActivity().catch(console.error)
+  }
 })

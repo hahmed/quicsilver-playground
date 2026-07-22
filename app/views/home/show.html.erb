@@ -10,9 +10,10 @@
       </div>
     </div>
 
-    <div class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300">
-      Experimental
-    </div>
+    <nav class="flex items-center gap-2">
+      <%= link_to "QuicDrop", "/drop", class: "rounded-full bg-lime-300 px-3 py-1.5 text-xs font-black text-slate-950 transition hover:bg-lime-200" %>
+      <%= link_to "Docs", docs_path, class: "rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.08]" %>
+    </nav>
   </header>
 
   <section class="mx-auto grid w-full max-w-6xl gap-8 px-6 pb-14 pt-8 sm:px-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:pt-14">
@@ -30,9 +31,10 @@
         and an experimental browser WebTransport stream from the same app through Quicsilver.
       </p>
 
-      <div class="mt-8 flex flex-wrap gap-3 text-sm text-slate-400">
-        <code class="rounded-full border border-white/10 bg-black/30 px-4 py-2 text-cyan-200">curl --http3 -I https://quicsilver.test:3443/</code>
-        <span class="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2">DevTools → Network → Protocol → h3</span>
+      <div class="mt-8 flex flex-wrap gap-3 text-sm">
+        <%= link_to "Enter QuicDrop", "/drop", class: "rounded-full bg-lime-300 px-5 py-3 font-black text-slate-950 shadow-lg shadow-lime-950/40 transition hover:bg-lime-200" %>
+        <%= link_to "Read the docs", docs_path, class: "rounded-full border border-white/10 bg-white/[0.05] px-5 py-3 font-bold text-white transition hover:bg-white/[0.09]" %>
+        <code class="rounded-full border border-white/10 bg-black/30 px-4 py-3 text-cyan-200">curl --http3 -I https://quicsilver.test:3443/</code>
       </div>
     </div>
 

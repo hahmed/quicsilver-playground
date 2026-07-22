@@ -1,3 +1,5 @@
+puts "Seeding quicsilver-playground..."
+
 doc_pages = [
   {
     title: "HTTP/3 basics",
@@ -101,3 +103,40 @@ doc_pages.each do |attributes|
   page = DocPage.find_or_initialize_by(slug: attributes.fetch(:slug))
   page.update!(attributes)
 end
+
+product = DropProduct.find_by(slug: "et90-extra-time") || DropProduct.find_by(slug: "stream-runner-03") || DropProduct.new
+product.update!(
+  slug: "et90-extra-time",
+  name: "ET90 Extra Time Edition",
+  tagline: "Built for the 90+7 moment.",
+  hero_image_path: "drop/et90.png",
+  watching_count: 12_847
+)
+
+wanted_skus = ["ET90-VOLT", "ET90-INFERNO", "ET90-BLACKOUT", "ET90-ICE"]
+stale_variants = product.drop_variants.where.not(sku: wanted_skus)
+DropEvent.where(drop_variant_id: stale_variants.select(:id)).update_all(drop_variant_id: nil)
+stale_variants.destroy_all
+
+[
+  ["Volt", "ET90-VOLT", "drop/et90-volt.png", 19, 31, 1],
+  ["Inferno", "ET90-INFERNO", "drop/et90-inferno.png", 14, 26, 2],
+  ["Blackout", "ET90-BLACKOUT", "drop/et90-blackout.png", 8, 42, 3],
+  ["Ice", "ET90-ICE", "drop/et90-ice.png", 23, 18, 4]
+].each do |name, sku, image_path, stock, claimed_count, position|
+  variant = product.drop_variants.find_or_initialize_by(sku: sku)
+  variant.update!(name: name, image_path: image_path, stock: stock, claimed_count: claimed_count, position: position)
+end
+
+if product.drop_events.none?
+  product.drop_events.create!(kind: "system", emoji: "⚡", body: "QUIC//DROP room opened")
+  product.drop_events.create!(kind: "reaction", actor: "guest-443", emoji: "🔥", body: "sent 🔥 at Volt", drop_variant: product.drop_variants.first)
+  product.drop_events.create!(kind: "comment", actor: "maya", body: "Volt pair is moving different")
+  product.drop_events.create!(kind: "milestone", emoji: "✨", body: "100 claims unlocked Spark Mode")
+end
+
+puts "Seeded #{doc_pages.size} doc pages"
+puts "Seeded QuicDrop product: #{product.name}"
+puts "Seeded #{product.drop_variants.count} variants"
+puts "Seeded #{product.drop_events.count} drop events"
+puts "Done."
