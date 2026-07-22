@@ -166,6 +166,8 @@ window.createMessage = async function (event) {
 let dropTransport = null
 let dropTransportReady = false
 let dropTransportConnecting = false
+let dropActivityPoller = null
+let latestDropEventId = null
 
 function setDropTransportStatus(label, mode = "fallback") {
   const status = document.getElementById("drop-transport-status")
@@ -247,6 +249,24 @@ function applyDropPayload(payload) {
   if (payload.events) renderDropActivity(payload.events)
 }
 
+function startDropActivityPolling() {
+  if (dropActivityPoller || !document.getElementById("drop-activity")) return
+
+  dropActivityPoller = setInterval(() => {
+    if (document.hidden) return
+
+    window.loadDrop().catch(console.error)
+    window.loadDropActivity().catch(console.error)
+  }, 2000)
+}
+
+function stopDropActivityPolling() {
+  if (!dropActivityPoller) return
+
+  clearInterval(dropActivityPoller)
+  dropActivityPoller = null
+}
+
 function renderDropStats(product) {
   const watching = document.getElementById("drop-watching")
   const claimed = document.getElementById("drop-claimed")
@@ -267,9 +287,35 @@ function renderDropStats(product) {
   })
 }
 
+function animateNewDropEvents(events) {
+  if (!events.length) return
+
+  const newestId = Math.max(...events.map((event) => event.id))
+
+  if (latestDropEventId) {
+    events
+      .filter((event) => event.id > latestDropEventId)
+      .forEach((event) => {
+        if (event.kind === "milestone") {
+          sparkDropMilestone()
+        } else if (event.emoji) {
+          burstDropEmoji(event.emoji)
+        } else if (event.kind === "comment") {
+          burstDropEmoji("💬")
+        } else if (event.kind === "claim") {
+          burstDropEmoji("💎")
+        }
+      })
+  }
+
+  latestDropEventId = newestId
+}
+
 function renderDropActivity(events) {
   const list = document.getElementById("drop-activity")
   if (!list) return
+
+  animateNewDropEvents(events)
 
   list.innerHTML = events.map((event) => `
     <article class="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -436,5 +482,10 @@ document.addEventListener("turbo:load", () => {
   if (document.getElementById("drop-activity")) {
     connectDropTransport().then(() => window.loadDrop()).catch(console.error)
     window.loadDropActivity().catch(console.error)
+    startDropActivityPolling()
   }
+})
+
+document.addEventListener("turbo:before-cache", () => {
+  stopDropActivityPolling()
 })

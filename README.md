@@ -135,7 +135,7 @@ The server responds with events and updated product state:
 }
 ```
 
-### Server activity stream
+### Next: server activity stream
 
 Use server-initiated stream data for the room feed:
 
@@ -147,7 +147,7 @@ Use server-initiated stream data for the room feed:
 
 The first version can stream periodic snapshots. A later version can add per-process pub/sub and broadcast every new event to connected sessions.
 
-### Datagrams for hype
+### Next: datagrams for hype
 
 Use unreliable datagrams for disposable, high-volume room energy:
 
@@ -159,7 +159,7 @@ A dropped emoji burst is fine. Claims and comments stay on reliable streams; fas
 
 ### Fallback
 
-Keep the JSON API path as a fallback. If WebTransport is unavailable, QuicDrop should still work through normal Rails requests.
+The JSON API path remains as a fallback. If WebTransport is unavailable, QuicDrop still works through normal Rails requests.
 
 ## Later: advanced QUIC lab
 
