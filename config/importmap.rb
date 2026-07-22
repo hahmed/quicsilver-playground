@@ -1,7 +1,7 @@
 # Pin npm packages by running ./bin/importmap
 
 pin "application"
-pin "quicsilver_web_transport"
+pin "quicsilver/web_transport", to: "quicsilver/web_transport.js"
 pin "@hotwired/turbo-rails", to: "turbo.min.js"
 pin "@hotwired/stimulus", to: "stimulus.min.js"
 pin "@hotwired/stimulus-loading", to: "stimulus-loading.js"

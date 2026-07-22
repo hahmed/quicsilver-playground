@@ -1,6 +1,6 @@
 import "@hotwired/turbo-rails"
 import "controllers"
-import { connect, openMessageStream } from "quicsilver_web_transport"
+import { connect, openMessageStream } from "quicsilver/web_transport"
 
 function output() {
   return document.getElementById("transport-output")
