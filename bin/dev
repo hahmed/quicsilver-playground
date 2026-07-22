@@ -5,11 +5,18 @@ if ! gem list foreman -i --silent; then
   gem install foreman
 fi
 
-# Default to port 3000 if not specified
-export PORT="${PORT:-3000}"
+# Default to port 3443 if not specified. Puma uses TCP and Quicsilver uses UDP,
+# so both can share the same numeric port like production HTTPS/H3.
+export PORT="${PORT:-3443}"
+export QUICSILVER_PORT="${QUICSILVER_PORT:-$PORT}"
+export QUICSILVER_DEV_HOSTS="${QUICSILVER_DEV_HOSTS:-localhost,quicsilver.test,127.0.0.1,::1}"
 
 # Serve the Rails page over trusted HTTPS in development so browser WebTransport works.
 export RAILS_SSL="${RAILS_SSL:-true}"
+
+# Puma parses its SSL bind before Rails boots, so create the shared
+# HTTP/3/WebTransport development certificate before foreman starts.
+bin/rails runner "Quicsilver::Rails::DevWebTransportCertificate.fetch"
 
 # Let the debug gem allow remote connections,
 # but avoid loading until `debugger` is called

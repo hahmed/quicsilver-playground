@@ -6,7 +6,7 @@
       <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-400 text-sm font-black text-slate-950">Q</div>
       <div>
         <p class="text-sm font-bold leading-none">Quicsilver</p>
-        <p class="mt-1 text-xs text-slate-500">Rails WebTransport playground</p>
+        <p class="mt-1 text-xs text-slate-500">Rails over HTTP/3</p>
       </div>
     </div>
 
@@ -15,69 +15,136 @@
     </div>
   </header>
 
-  <section class="mx-auto grid w-full max-w-6xl gap-8 px-6 pb-16 pt-8 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pb-24 lg:pt-14">
+  <section class="mx-auto grid w-full max-w-6xl gap-8 px-6 pb-14 pt-8 sm:px-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:pt-14">
     <div>
       <div class="mb-6 inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-200">
-        HTTP/3 + WebTransport for Rails
+        HTTP/3 pages, assets, APIs, and WebTransport
       </div>
 
       <h1 class="max-w-4xl text-balance text-5xl font-black tracking-tight sm:text-6xl lg:text-7xl">
-        Browser-native realtime, served by Ruby.
+        Rails served over QUIC.
       </h1>
 
       <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-        Quicsilver Playground is a small Rails app for trying WebTransport streams,
-        HTTP/3 discovery, and realtime primitives without leaving Rails.
+        This playground serves ordinary Rails HTML, Tailwind assets, JSON API endpoints,
+        and an experimental browser WebTransport stream from the same app through Quicsilver.
       </p>
 
-      <div class="mt-8 flex flex-wrap gap-3">
-        <button type="button" onclick="runEcho()" class="rounded-full bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/50 transition hover:bg-cyan-300">
-          Run echo demo
-        </button>
-        <button type="button" onclick="clearTransportLog()" class="rounded-full border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-bold text-white transition hover:bg-white/[0.09]">
-          Clear output
-        </button>
+      <div class="mt-8 flex flex-wrap gap-3 text-sm text-slate-400">
+        <code class="rounded-full border border-white/10 bg-black/30 px-4 py-2 text-cyan-200">curl --http3 -I https://quicsilver.test:3443/</code>
+        <span class="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2">DevTools → Network → Protocol → h3</span>
       </div>
     </div>
 
-    <article class="rounded-[2rem] border border-white/10 bg-white/[0.06] p-4 shadow-2xl shadow-black/30 backdrop-blur">
-      <div class="mb-4 flex items-center justify-between px-2">
-        <div>
-          <p class="text-sm font-bold">Echo stream</p>
-          <p class="mt-1 text-xs text-slate-500">One bidirectional WebTransport stream</p>
+    <article class="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-2xl shadow-black/30 backdrop-blur">
+      <p class="text-sm font-bold text-white">What to verify</p>
+      <p class="mt-2 text-sm leading-6 text-slate-400">Launch with <code class="rounded bg-black/40 px-1.5 py-0.5 text-cyan-200">bin/chrome-h3</code>, then open Chrome DevTools → Network → Protocol.</p>
+
+      <div class="mt-5 grid gap-3">
+        <div class="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+          <span class="text-sm text-slate-300">HTML document</span>
+          <span class="rounded-full bg-cyan-400/10 px-2.5 py-1 text-xs font-bold text-cyan-300">h3</span>
         </div>
-        <div class="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
-          <span id="webtransport-status">checking...</span>
+        <div class="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+          <span class="text-sm text-slate-300">Tailwind + JS assets</span>
+          <span class="rounded-full bg-indigo-400/10 px-2.5 py-1 text-xs font-bold text-indigo-300">h3</span>
+        </div>
+        <div class="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+          <span class="text-sm text-slate-300">JSON API</span>
+          <span class="rounded-full bg-emerald-400/10 px-2.5 py-1 text-xs font-bold text-emerald-300">Rails controller</span>
+        </div>
+        <div class="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+          <span class="text-sm text-slate-300">WebTransport</span>
+          <span class="rounded-full bg-fuchsia-400/10 px-2.5 py-1 text-xs font-bold text-fuchsia-300">Extended CONNECT</span>
         </div>
       </div>
-
-      <pre id="transport-output" class="min-h-72 overflow-auto rounded-3xl border border-white/10 bg-[#02040A] p-5 font-mono text-sm leading-6 text-emerald-300 shadow-inner shadow-black whitespace-pre-wrap">Click “Run echo demo” to start.</pre>
     </article>
   </section>
 
-  <section class="mx-auto grid w-full max-w-6xl gap-4 px-6 pb-16 sm:px-8 md:grid-cols-3">
+  <section class="mx-auto grid w-full max-w-6xl gap-4 px-6 pb-10 sm:px-8 md:grid-cols-4">
     <article class="rounded-3xl border border-white/10 bg-white/[0.045] p-6">
       <div class="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-300">01</div>
-      <h2 class="text-lg font-black">Rails routes</h2>
-      <p class="mt-3 text-sm leading-6 text-slate-400">
-        Declare WebTransport endpoints beside normal Rails routes.
-      </p>
+      <h2 class="text-lg font-black">HTML</h2>
+      <p class="mt-3 text-sm leading-6 text-slate-400">A normal Rails controller renders this page.</p>
     </article>
 
     <article class="rounded-3xl border border-white/10 bg-white/[0.045] p-6">
       <div class="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-400/10 text-indigo-300">02</div>
-      <h2 class="text-lg font-black">Reliable streams</h2>
-      <p class="mt-3 text-sm leading-6 text-slate-400">
-        Send framed JSON messages over browser WebTransport streams.
-      </p>
+      <h2 class="text-lg font-black">Assets</h2>
+      <p class="mt-3 text-sm leading-6 text-slate-400">Tailwind and importmap JavaScript load through Rails assets.</p>
     </article>
 
     <article class="rounded-3xl border border-white/10 bg-white/[0.045] p-6">
-      <div class="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-fuchsia-400/10 text-fuchsia-300">03</div>
-      <h2 class="text-lg font-black">HTTP/3 first</h2>
-      <p class="mt-3 text-sm leading-6 text-slate-400">
-        Exercise QUIC, Alt-Svc, and browser-native realtime locally.
-      </p>
+      <div class="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-400/10 text-emerald-300">03</div>
+      <h2 class="text-lg font-black">API</h2>
+      <p class="mt-3 text-sm leading-6 text-slate-400">JSON endpoints prove normal API traffic works over HTTP/3.</p>
+    </article>
+
+    <article class="rounded-3xl border border-white/10 bg-white/[0.045] p-6">
+      <div class="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-fuchsia-400/10 text-fuchsia-300">04</div>
+      <h2 class="text-lg font-black">Realtime</h2>
+      <p class="mt-3 text-sm leading-6 text-slate-400">WebTransport demonstrates early browser-native streams.</p>
+    </article>
+  </section>
+
+  <section class="mx-auto grid w-full max-w-6xl gap-6 px-6 pb-16 sm:px-8 lg:grid-cols-2">
+    <article class="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-2xl shadow-black/20 backdrop-blur">
+      <div class="mb-4 flex items-center justify-between gap-4">
+        <div>
+          <p class="text-sm font-bold">JSON API over HTTP/3</p>
+          <p class="mt-1 text-xs text-slate-500">GET /api/status through a Rails controller</p>
+        </div>
+        <button type="button" onclick="runApiStatus()" class="rounded-full bg-emerald-400 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-emerald-300">Run</button>
+      </div>
+
+      <pre id="api-output" class="min-h-64 overflow-auto rounded-3xl border border-white/10 bg-[#02040A] p-5 font-mono text-sm leading-6 text-cyan-200 shadow-inner shadow-black whitespace-pre-wrap">Click “Run” to fetch /api/status.</pre>
+    </article>
+
+    <article class="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-2xl shadow-black/20 backdrop-blur">
+      <div class="mb-4 flex items-center justify-between gap-4">
+        <div>
+          <p class="text-sm font-bold">WebTransport echo</p>
+          <p class="mt-1 text-xs text-slate-500">One reliable bidirectional stream</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+            API: <span id="webtransport-status">checking...</span>
+          </div>
+          <button type="button" onclick="runEcho()" class="rounded-full bg-fuchsia-400 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-fuchsia-300">Run</button>
+        </div>
+      </div>
+
+      <pre id="transport-output" class="min-h-64 overflow-auto rounded-3xl border border-white/10 bg-[#02040A] p-5 font-mono text-sm leading-6 text-emerald-300 shadow-inner shadow-black whitespace-pre-wrap">Click “Run” to start the WebTransport echo.</pre>
+    </article>
+  </section>
+
+  <section class="mx-auto grid w-full max-w-6xl gap-6 px-6 pb-20 sm:px-8 lg:grid-cols-[0.82fr_1.18fr]">
+    <article class="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+      <p class="text-sm font-bold text-white">Tiny full-stack Rails app</p>
+      <h2 class="mt-2 text-3xl font-black tracking-tight">Guestbook over the JSON API</h2>
+      <p class="mt-3 text-sm leading-6 text-slate-400">This form posts to <code class="rounded bg-black/40 px-1.5 py-0.5 text-cyan-200">/api/messages</code>, persists to SQLite, then reloads the list from Rails.</p>
+
+      <form class="mt-6 grid gap-3" onsubmit="createMessage(event)">
+        <input name="author" required maxlength="80" placeholder="Your name" class="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none ring-cyan-300/30 transition focus:ring-4">
+        <textarea name="body" required maxlength="1000" placeholder="Say something over HTTP/3…" class="min-h-28 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none ring-cyan-300/30 transition focus:ring-4"></textarea>
+        <button type="submit" class="rounded-full bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/50 transition hover:bg-cyan-300">Post message</button>
+      </form>
+
+      <p id="messages-error" class="mt-4 text-sm text-red-300"></p>
+    </article>
+
+    <article class="rounded-[2rem] border border-white/10 bg-white/[0.045] p-6">
+      <div class="mb-5 flex items-center justify-between gap-4">
+        <div>
+          <p class="text-sm font-bold text-white">Messages</p>
+          <p class="mt-1 text-xs text-slate-500">GET /api/messages</p>
+        </div>
+        <button type="button" onclick="loadMessages()" class="rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-bold text-white transition hover:bg-white/[0.09]">Refresh</button>
+      </div>
+
+      <div id="messages-list" class="grid gap-3">
+        <p class="text-sm text-slate-500">Loading messages…</p>
+      </div>
     </article>
   </section>
 </main>

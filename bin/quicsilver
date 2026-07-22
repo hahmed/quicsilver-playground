@@ -27,10 +27,19 @@ puts "=> Listening on udp://#{host}:#{port}"
 puts "=> TLS cert: #{cert_file}"
 puts "=> Ctrl-C to shutdown"
 
+app = if ENV["H3_DEBUG"]
+  ->(env) do
+    puts "[h3] #{env["REQUEST_METHOD"]} #{env["HTTP_HOST"]} #{env["PATH_INFO"]}"
+    Rails.application.call(env)
+  end
+else
+  Rails.application
+end
+
 server = Quicsilver::Server.new(
   port,
   address: host,
-  app: Rails.application,
+  app: app,
   server_configuration: configuration
 )
 

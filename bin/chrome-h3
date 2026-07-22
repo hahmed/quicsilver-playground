@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+HOST="${HOST:-quicsilver.test}"
+PORT="${PORT:-3443}"
+PATH_INFO="${PATH_INFO:-/}"
+PROFILE_DIR="${PROFILE_DIR:-/tmp/quicsilver-playground-chrome-h3}"
+CHROME="${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
+
+rm -rf "$PROFILE_DIR"
+
+echo "🚀 Launching Chrome with forced HTTP/3"
+echo "   Origin:  ${HOST}:${PORT}"
+echo "   URL:     https://${HOST}:${PORT}${PATH_INFO}"
+echo "   Profile: ${PROFILE_DIR} (fresh)"
+echo ""
+echo "If Chrome is already open and this says 'Opening in existing browser session', quit Chrome first:"
+echo "  osascript -e 'quit app \"Google Chrome\"'"
+echo ""
+
+exec "$CHROME" \
+  --user-data-dir="$PROFILE_DIR" \
+  --origin-to-force-quic-on="${HOST}:${PORT}" \
+  "https://${HOST}:${PORT}${PATH_INFO}"
