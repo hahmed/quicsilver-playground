@@ -14,6 +14,6 @@ class CreateDocPages < ActiveRecord::Migration[8.0]
     end
 
     add_index :doc_pages, :slug, unique: true
-    add_index :doc_pages, [:category, :position]
+    add_index :doc_pages, [ :category, :position ]
   end
 end
