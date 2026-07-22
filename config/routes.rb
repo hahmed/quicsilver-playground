@@ -3,7 +3,7 @@ Rails.application.routes.draw do
 
   namespace :api do
     resource :status, only: :show, controller: :status
-    resources :messages, only: [:index, :create]
+    resources :messages, only: [ :index, :create ]
   end
 
   webtransport "/transports/echo", to: EchoTransport

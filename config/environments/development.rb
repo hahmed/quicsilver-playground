@@ -74,5 +74,4 @@ Rails.application.configure do
      port: ENV.fetch("QUICSILVER_PORT", 4433).to_i,
      max_age: 3600
    }
-
 end
