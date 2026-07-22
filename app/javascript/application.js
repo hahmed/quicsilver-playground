@@ -162,6 +162,91 @@ window.createMessage = async function (event) {
   }
 }
 
+
+let dropTransport = null
+let dropTransportReady = false
+let dropTransportConnecting = false
+
+function setDropTransportStatus(label, mode = "fallback") {
+  const status = document.getElementById("drop-transport-status")
+  if (!status) return
+
+  status.textContent = `Room transport: ${label}`
+  status.className = {
+    webtransport: "rounded-full bg-fuchsia-400/10 px-3 py-1 text-xs font-bold text-fuchsia-300",
+    connecting: "rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-bold text-cyan-300",
+    fallback: "rounded-full bg-slate-400/10 px-3 py-1 text-xs font-bold text-slate-300"
+  }[mode]
+}
+
+async function connectDropTransport() {
+  if (!document.getElementById("drop-activity")) return false
+  if (!("WebTransport" in window)) {
+    setDropTransportStatus("Rails API fallback", "fallback")
+    return false
+  }
+  if (dropTransportReady) return true
+  if (dropTransportConnecting) return false
+
+  dropTransportConnecting = true
+  setDropTransportStatus("connecting", "connecting")
+
+  try {
+    const url = new URL("/transports/drop", window.location.href)
+    url.protocol = "https:"
+    url.port = window.QUICSILVER_PORT || window.location.port || "4433"
+
+    dropTransport = await connect(url.toString())
+    dropTransportReady = true
+    setDropTransportStatus("WebTransport", "webtransport")
+
+    dropTransport.closed.then(
+      () => {
+        dropTransportReady = false
+        dropTransport = null
+        setDropTransportStatus("Rails API fallback", "fallback")
+      },
+      () => {
+        dropTransportReady = false
+        dropTransport = null
+        setDropTransportStatus("Rails API fallback", "fallback")
+      }
+    )
+
+    return true
+  } catch (error) {
+    console.error(error)
+    dropTransportReady = false
+    dropTransport = null
+    setDropTransportStatus("Rails API fallback", "fallback")
+    return false
+  } finally {
+    dropTransportConnecting = false
+  }
+}
+
+async function sendDropCommand(command) {
+  const connected = dropTransportReady || await connectDropTransport()
+  if (!connected || !dropTransport) throw new Error("WebTransport unavailable")
+
+  const stream = await openMessageStream(dropTransport)
+  await stream.send(command)
+  await stream.close()
+
+  for await (const response of stream.responses()) {
+    if (response.type === "error") throw new Error(response.error)
+    setDropTransportStatus("WebTransport · live", "webtransport")
+    return response
+  }
+
+  throw new Error("No WebTransport response")
+}
+
+function applyDropPayload(payload) {
+  if (payload.product) renderDropStats(payload.product)
+  if (payload.events) renderDropActivity(payload.events)
+}
+
 function renderDropStats(product) {
   const watching = document.getElementById("drop-watching")
   const claimed = document.getElementById("drop-claimed")
@@ -251,8 +336,13 @@ window.swapDropHero = function (src) {
 window.loadDrop = async function () {
   if (!document.getElementById("drop-activity")) return
 
-  const product = await fetchJson("/api/drop")
-  renderDropStats(product)
+  try {
+    const payload = await sendDropCommand({ type: "snapshot" })
+    applyDropPayload(payload)
+  } catch (_error) {
+    const product = await fetchJson("/api/drop")
+    renderDropStats(product)
+  }
 }
 
 window.loadDropActivity = async function () {
@@ -265,13 +355,19 @@ window.loadDropActivity = async function () {
 window.claimDropVariant = async function (variantId) {
   try {
     const before = Number(document.getElementById("drop-claimed")?.textContent || 0)
-    const payload = await fetchJson("/api/drop_claims", {
-      method: "POST",
-      body: JSON.stringify({ variant_id: variantId })
-    })
+    let payload
 
-    renderDropStats(payload.product)
-    await loadDropActivity()
+    try {
+      payload = await sendDropCommand({ type: "claim", variant_id: variantId })
+    } catch (_error) {
+      payload = await fetchJson("/api/drop_claims", {
+        method: "POST",
+        body: JSON.stringify({ variant_id: variantId })
+      })
+      await loadDropActivity()
+    }
+
+    applyDropPayload(payload)
     burstDropEmoji(payload.claimed ? "💎" : "👀")
 
     const after = Number(payload.product.claimed_count)
@@ -284,13 +380,19 @@ window.claimDropVariant = async function (variantId) {
 
 window.sendDropReaction = async function (emoji) {
   try {
-    const payload = await fetchJson("/api/drop_events", {
-      method: "POST",
-      body: JSON.stringify({ kind: "reaction", emoji })
-    })
+    let payload
 
-    renderDropStats(payload.product)
-    await loadDropActivity()
+    try {
+      payload = await sendDropCommand({ type: "reaction", emoji })
+    } catch (_error) {
+      payload = await fetchJson("/api/drop_events", {
+        method: "POST",
+        body: JSON.stringify({ kind: "reaction", emoji })
+      })
+      await loadDropActivity()
+    }
+
+    applyDropPayload(payload)
     burstDropEmoji(emoji)
   } catch (error) {
     console.error(error)
@@ -303,14 +405,20 @@ window.sendDropComment = async function (event) {
   const body = form.elements.body.value
 
   try {
-    const payload = await fetchJson("/api/drop_events", {
-      method: "POST",
-      body: JSON.stringify({ kind: "comment", actor: "you", body })
-    })
+    let payload
 
-    renderDropStats(payload.product)
+    try {
+      payload = await sendDropCommand({ type: "comment", actor: "you", body })
+    } catch (_error) {
+      payload = await fetchJson("/api/drop_events", {
+        method: "POST",
+        body: JSON.stringify({ kind: "comment", actor: "you", body })
+      })
+      await loadDropActivity()
+    }
+
+    applyDropPayload(payload)
     form.reset()
-    await loadDropActivity()
     burstDropEmoji("💬")
   } catch (error) {
     console.error(error)
@@ -326,7 +434,7 @@ document.addEventListener("turbo:load", () => {
   })
 
   if (document.getElementById("drop-activity")) {
-    window.loadDrop().catch(console.error)
+    connectDropTransport().then(() => window.loadDrop()).catch(console.error)
     window.loadDropActivity().catch(console.error)
   }
 })

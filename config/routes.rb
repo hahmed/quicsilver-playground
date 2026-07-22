@@ -16,6 +16,7 @@ Rails.application.routes.draw do
   end
 
   webtransport "/transports/echo", to: EchoTransport
+  webtransport "/transports/drop", to: DropTransport
 
   get "up" => "rails/health#show", as: :rails_health_check
 end

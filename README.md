@@ -1,6 +1,14 @@
 # Quicsilver Playground
 
-A small Rails app for trying Quicsilver, HTTP/3, and browser WebTransport.
+A Rails playground for Quicsilver: ordinary Rails pages, assets, APIs, and browser realtime running over HTTP/3.
+
+The app is intentionally split into three surfaces:
+
+- `/` — protocol lab with a JSON API check and WebTransport echo.
+- `/docs` — normal Rails docs: resourceful routes, controllers, ERB, Turbo navigation, and Turbo votes.
+- `/drop` — **QuicDrop**, an ET90 live drop room with campaign images, colorways, claims, reactions, comments, and activity.
+
+The point is to prove that Rails can stay Rails while the transport underneath becomes QUIC/HTTP/3.
 
 ## Local setup
 
@@ -36,13 +44,25 @@ In another terminal, launch a fresh Chrome profile forced onto HTTP/3 for the lo
 bin/chrome-h3
 ```
 
-Open page:
+Open:
 
 ```text
 https://quicsilver.test:3443/
 ```
 
-Click **Run echo demo**. You should see:
+Chrome DevTools → Network → Protocol should show `h3` for the document, Rails assets, API calls, docs navigation, and QuicDrop campaign images when launched with `bin/chrome-h3`.
+
+## Demo surfaces
+
+### `/` Protocol lab
+
+The homepage is the quick verification surface:
+
+- `GET /api/status` through a normal Rails controller.
+- WebTransport echo through `/transports/echo`.
+- Links into `/docs` and `/drop`.
+
+Click **Run** on the WebTransport echo. You should see:
 
 ```text
 transport ready
@@ -51,7 +71,138 @@ received { ... }
 transport closed cleanly
 ```
 
-Chrome DevTools Network should show the document and assets using `h3` when launched with `bin/chrome-h3`.
+### `/docs` Rails over HTTP/3
+
+The docs section is deliberately boring Rails:
+
+- `resources :docs, param: :slug`
+- `DocsController`
+- ERB views
+- Turbo navigation
+- nested Turbo vote resource
+
+Use this page to prove that normal Rails pages and Turbo fetches work over HTTP/3 without turning the app into a custom protocol demo.
+
+### `/drop` QuicDrop
+
+QuicDrop is the richer storefront demo.
+
+It is a fictional ET90 football boot drop: one hero product, multiple colorways, campaign images, stock/claim counters, reactions, comments, and a live activity feed.
+
+Current implementation:
+
+- Rails renders the page.
+- PNG campaign images are served through the Rails asset pipeline.
+- QuicDrop opens a browser WebTransport session to `/transports/drop`.
+- Reactions, comments, claims, and snapshots use reliable WebTransport message streams when available.
+- Rails JSON APIs remain as fallback and for direct inspection:
+  - `GET /api/drop`
+  - `GET /api/drop_events`
+  - `POST /api/drop_events`
+  - `POST /api/drop_claims`
+- Browser JavaScript animates local reaction bursts and swaps campaign images into the hero frame.
+
+In DevTools, the `/drop` document and ET90 PNGs should show `h3`. The live room should show a long-lived pending `webtransport` request for `/transports/drop`. After a successful command, the page shows `Room transport: WebTransport · live`.
+
+## QuicDrop WebTransport shape
+
+QuicDrop now uses WebTransport for its command path. The current route is:
+
+```ruby
+webtransport "/transports/drop", to: DropTransport
+```
+
+The goal is not just to replace `fetch()` with a socket. The page should use multiple WebTransport capabilities where they make sense.
+
+### Reliable command stream
+
+The current implementation uses reliable bidirectional message streams for actions that must be processed exactly enough to matter:
+
+```json
+{ "type": "reaction", "emoji": "🔥" }
+{ "type": "comment", "body": "need the Inferno pair" }
+{ "type": "claim", "variant_id": 12 }
+{ "type": "snapshot" }
+```
+
+The server responds with events and updated product state:
+
+```json
+{
+  "type": "event",
+  "event": { "kind": "claim", "body": "claimed Volt" },
+  "product": { "claimed_count": 118 }
+}
+```
+
+### Server activity stream
+
+Use server-initiated stream data for the room feed:
+
+```json
+{ "type": "activity", "event": { ... } }
+{ "type": "stats", "product": { ... } }
+{ "type": "milestone", "body": "150 claims unlocked Final Whistle" }
+```
+
+The first version can stream periodic snapshots. A later version can add per-process pub/sub and broadcast every new event to connected sessions.
+
+### Datagrams for hype
+
+Use unreliable datagrams for disposable, high-volume room energy:
+
+```json
+{ "type": "hype", "emoji": "🔥", "x": 0.42, "y": 0.71 }
+```
+
+A dropped emoji burst is fine. Claims and comments stay on reliable streams; fast reaction noise can use datagrams. This is the clearest “WebTransport is more than WebSockets” part of the demo.
+
+### Fallback
+
+Keep the JSON API path as a fallback. If WebTransport is unavailable, QuicDrop should still work through normal Rails requests.
+
+## Later: advanced QUIC lab
+
+After QuicDrop uses WebTransport, the page can grow a small advanced diagnostics panel for Quicsilver-native features.
+
+These are separate features and should not be conflated:
+
+### CIBIR
+
+CIBIR is connection-ID metadata. The idea is to embed a recoverable key into the QUIC Connection ID so server or infrastructure code can identify/routemap a connection without inspecting application payloads.
+
+Possible demo:
+
+```text
+CIBIR connection key: drop-room-a17
+Route cohort: et90-extra-time
+```
+
+Tasks:
+
+- design a small encoder/decoder for connection ID metadata
+- expose the recovered key on the connection/session
+- surface it to Rails, for example in `request.env`
+- show the value in QuicDrop diagnostics
+
+### Resource saturation / backpressure
+
+This is not CIBIR. This is a server protection lever.
+
+The demo should show Quicsilver detecting or receiving a resource-pressure signal and applying policy at the right layer: server, connection, session, stream, request, or WebTransport session.
+
+Possible behavior under pressure:
+
+- claims are gated or rejected
+- read-only page/API traffic still works
+- hype stream may stay active
+- UI shows `normal`, `elevated`, or `saturated`
+
+### QPACK dynamic table
+
+QPACK dynamic table support is separate again.
+
+The protocol work should correctly handle QPACK dynamic table capacity and only advertise dynamic capacity when decoding support is real. Once implemented, the playground can expose lightweight QPACK stats as part of the diagnostics story.
 
 ## Why `bin/chrome-h3`?
 
