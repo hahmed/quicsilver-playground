@@ -1,11 +1,20 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+$stdout.sync = true
+$stderr.sync = true
+
 ENV["RAILS_ENV"] ||= "development"
 
 require_relative "../config/environment"
+require "logger"
 require "quicsilver"
 require "quicsilver/rails/dev_web_transport_certificate"
+
+Quicsilver.logger = Logger.new($stderr).tap do |logger|
+  logger.progname = "Quicsilver"
+  logger.level = ENV["QUICSILVER_DEBUG"] || ENV["H3_DEBUG"] ? Logger::DEBUG : Logger::INFO
+end
 
 host = ENV.fetch("QUICSILVER_HOST", "0.0.0.0")
 port = Integer(ENV.fetch("QUICSILVER_PORT", "4433"))

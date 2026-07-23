@@ -168,6 +168,7 @@ let dropTransportReady = false
 let dropTransportConnecting = false
 let dropActivityPoller = null
 let dropSubscriptionStarted = false
+let dropDatagramReaderStarted = false
 let latestDropEventId = null
 
 function setDropTransportStatus(label, mode = "fallback") {
@@ -180,6 +181,12 @@ function setDropTransportStatus(label, mode = "fallback") {
     connecting: "rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-bold text-cyan-300",
     fallback: "rounded-full bg-slate-400/10 px-3 py-1 text-xs font-bold text-slate-300"
   }[mode]
+}
+
+function timeoutAfter(ms, message) {
+  return new Promise((_, reject) => {
+    setTimeout(() => reject(new Error(message)), ms)
+  })
 }
 
 async function connectDropTransport() {
@@ -199,7 +206,12 @@ async function connectDropTransport() {
     url.protocol = "https:"
     url.port = window.QUICSILVER_PORT || window.location.port || "4433"
 
-    dropTransport = await connect(url.toString())
+    console.debug("[drop] connecting WebTransport", url.toString())
+    dropTransport = await Promise.race([
+      connect(url.toString()),
+      timeoutAfter(3000, "WebTransport connect timed out")
+    ])
+    console.debug("[drop] connected WebTransport")
     dropTransportReady = true
     setDropTransportStatus("WebTransport", "webtransport")
 
@@ -218,10 +230,10 @@ async function connectDropTransport() {
 
     return true
   } catch (error) {
-    console.error(error)
+    console.error("[drop] WebTransport connect failed", error)
     dropTransportReady = false
     dropTransport = null
-    setDropTransportStatus("Rails API fallback", "fallback")
+    setDropTransportStatus("WebTransport connect failed", "fallback")
     return false
   } finally {
     dropTransportConnecting = false
@@ -254,18 +266,58 @@ async function subscribeDropRoom() {
   dropSubscriptionStarted = true
 
   try {
+    console.debug("[drop] opening activity stream")
     const stream = await openMessageStream(dropTransport)
     await stream.send({ type: "subscribe" })
+    await stream.close()
+    console.debug("[drop] activity stream subscribed")
 
     for await (const payload of stream.responses()) {
+      console.debug("[drop] activity stream payload", payload)
       applyDropPayload(payload)
       setDropTransportStatus("WebTransport · streaming", "webtransport")
     }
   } catch (error) {
-    console.error(error)
+    console.error("[drop] WebTransport activity stream failed", error)
     dropSubscriptionStarted = false
-    setDropTransportStatus("WebTransport commands + polling", "webtransport")
-    startDropActivityPolling()
+    setDropTransportStatus("WebTransport stream failed", "fallback")
+  }
+}
+
+async function readDropDatagrams() {
+  if (dropDatagramReaderStarted || !dropTransport?.datagrams?.readable) return
+
+  dropDatagramReaderStarted = true
+  const decoder = new TextDecoder()
+  const reader = dropTransport.datagrams.readable.getReader()
+
+  try {
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+
+      const payload = JSON.parse(decoder.decode(value))
+      if (payload.emoji) burstDropEmoji(payload.emoji)
+    }
+  } catch (error) {
+    console.debug("[drop] datagram reader stopped", error)
+  } finally {
+    dropDatagramReaderStarted = false
+    reader.releaseLock()
+  }
+}
+
+async function sendDropDatagram(payload) {
+  try {
+    const connected = dropTransportReady || await connectDropTransport()
+    if (!connected || !dropTransport?.datagrams?.writable) return
+
+    const writer = dropTransport.datagrams.writable.getWriter()
+    const encoded = new TextEncoder().encode(JSON.stringify(payload))
+    await writer.write(encoded)
+    writer.releaseLock()
+  } catch (error) {
+    console.debug("[drop] datagram skipped", error)
   }
 }
 
@@ -453,6 +505,8 @@ window.sendDropReaction = async function (emoji) {
   try {
     let payload
 
+    sendDropDatagram({ type: "hype", emoji })
+
     try {
       payload = await sendDropCommand({ type: "reaction", emoji })
     } catch (_error) {
@@ -505,8 +559,11 @@ document.addEventListener("turbo:load", () => {
   })
 
   if (document.getElementById("drop-activity")) {
+    stopDropActivityPolling()
+
     connectDropTransport().then(() => {
       subscribeDropRoom().catch(console.error)
+      readDropDatagrams().catch(console.error)
       window.loadDrop().catch(console.error)
     }).catch(console.error)
     window.loadDropActivity().catch(console.error)
@@ -516,4 +573,5 @@ document.addEventListener("turbo:load", () => {
 document.addEventListener("turbo:before-cache", () => {
   stopDropActivityPolling()
   dropSubscriptionStarted = false
+  dropDatagramReaderStarted = false
 })
