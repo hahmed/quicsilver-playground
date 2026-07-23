@@ -167,6 +167,7 @@ let dropTransport = null
 let dropTransportReady = false
 let dropTransportConnecting = false
 let dropActivityPoller = null
+let dropSubscriptionStarted = false
 let latestDropEventId = null
 
 function setDropTransportStatus(label, mode = "fallback") {
@@ -242,6 +243,30 @@ async function sendDropCommand(command) {
   }
 
   throw new Error("No WebTransport response")
+}
+
+async function subscribeDropRoom() {
+  if (dropSubscriptionStarted) return
+
+  const connected = dropTransportReady || await connectDropTransport()
+  if (!connected || !dropTransport) return
+
+  dropSubscriptionStarted = true
+
+  try {
+    const stream = await openMessageStream(dropTransport)
+    await stream.send({ type: "subscribe" })
+
+    for await (const payload of stream.responses()) {
+      applyDropPayload(payload)
+      setDropTransportStatus("WebTransport · streaming", "webtransport")
+    }
+  } catch (error) {
+    console.error(error)
+    dropSubscriptionStarted = false
+    setDropTransportStatus("WebTransport commands + polling", "webtransport")
+    startDropActivityPolling()
+  }
 }
 
 function applyDropPayload(payload) {
@@ -480,12 +505,15 @@ document.addEventListener("turbo:load", () => {
   })
 
   if (document.getElementById("drop-activity")) {
-    connectDropTransport().then(() => window.loadDrop()).catch(console.error)
+    connectDropTransport().then(() => {
+      subscribeDropRoom().catch(console.error)
+      window.loadDrop().catch(console.error)
+    }).catch(console.error)
     window.loadDropActivity().catch(console.error)
-    startDropActivityPolling()
   }
 })
 
 document.addEventListener("turbo:before-cache", () => {
   stopDropActivityPolling()
+  dropSubscriptionStarted = false
 })
