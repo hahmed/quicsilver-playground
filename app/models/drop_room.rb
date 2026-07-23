@@ -9,7 +9,7 @@ class DropRoom
         subscribers << queue
         subscribers.size
       end
-      puts "[DropRoom] subscribe count=#{count}"
+      puts "[DropRoom] subscribe count=#{count}" if ENV["DROP_DEBUG"]
       queue
     end
 
@@ -18,13 +18,13 @@ class DropRoom
         subscribers.delete(queue)
         subscribers.size
       end
-      puts "[DropRoom] unsubscribe count=#{count}"
+      puts "[DropRoom] unsubscribe count=#{count}" if ENV["DROP_DEBUG"]
       queue.close unless queue.closed?
     end
 
     def broadcast(payload)
       current_subscribers = mutex.synchronize { subscribers.dup }
-      puts "[DropRoom] broadcast type=#{payload[:type] || payload['type']} subscribers=#{current_subscribers.size}"
+      puts "[DropRoom] broadcast type=#{payload[:type] || payload['type']} subscribers=#{current_subscribers.size}" if ENV["DROP_DEBUG"]
 
       current_subscribers.each do |subscriber|
         subscriber << payload unless subscriber.closed?

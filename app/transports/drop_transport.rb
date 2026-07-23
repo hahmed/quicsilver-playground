@@ -22,7 +22,7 @@ class DropTransport < Quicsilver::WebTransport::Endpoint
       message = decode(stream.read_message)
       return unless message
 
-      puts "[DropTransport] #{message.inspect}"
+      puts "[DropTransport] #{message.inspect}" if ENV["DROP_DEBUG"]
       Rails.logger.info("[DropTransport] #{message.inspect}")
 
       if message.fetch("type") == "subscribe"
