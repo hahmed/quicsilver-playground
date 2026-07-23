@@ -33,7 +33,6 @@ class DropTransport < Quicsilver::WebTransport::Endpoint
       return debug("stream ended before first message") unless message
 
       debug "message #{message.inspect}"
-      Rails.logger.info("[DropTransport] #{message.inspect}")
 
       if message.fetch("type") == "subscribe"
         debug "enter activity stream"
