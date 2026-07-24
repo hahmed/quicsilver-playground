@@ -161,48 +161,9 @@ A dropped emoji burst is fine. Claims and comments stay on reliable streams; fas
 
 The JSON API path remains as a fallback. If WebTransport is unavailable, QuicDrop still works through normal Rails requests.
 
-## Later: advanced QUIC lab
+## Later
 
-After QuicDrop uses WebTransport, the page can grow a small advanced diagnostics panel for Quicsilver-native features.
-
-These are separate features and should not be conflated:
-
-### CIBIR
-
-CIBIR is connection-ID metadata. The idea is to embed a recoverable key into the QUIC Connection ID so server or infrastructure code can identify/routemap a connection without inspecting application payloads.
-
-Possible demo:
-
-```text
-CIBIR connection key: drop-room-a17
-Route cohort: et90-extra-time
-```
-
-Tasks:
-
-- design a small encoder/decoder for connection ID metadata
-- expose the recovered key on the connection/session
-- surface it to Rails, for example in `request.env`
-- show the value in QuicDrop diagnostics
-
-### Resource saturation / backpressure
-
-This is not CIBIR. This is a server protection lever.
-
-The demo should show Quicsilver detecting or receiving a resource-pressure signal and applying policy at the right layer: server, connection, session, stream, request, or WebTransport session.
-
-Possible behavior under pressure:
-
-- claims are gated or rejected
-- read-only page/API traffic still works
-- hype stream may stay active
-- UI shows `normal`, `elevated`, or `saturated`
-
-### QPACK dynamic table
-
-QPACK dynamic table support is separate again.
-
-The protocol work should correctly handle QPACK dynamic table capacity and only advertise dynamic capacity when decoding support is real. Once implemented, the playground can expose lightweight QPACK stats as part of the diagnostics story.
+QuicDrop is intentionally focused on Rails over HTTP/3 and browser WebTransport. Future versions may add a small diagnostics panel for Quicsilver-native protocol features such as connection metadata, backpressure signals, and QPACK stats.
 
 ## Why `bin/chrome-h3`?
 
