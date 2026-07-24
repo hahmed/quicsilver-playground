@@ -11,7 +11,7 @@ GIT
 
 GIT
   remote: https://github.com/hahmed/quicsilver.git
-  revision: 0fc683ada37e9222954e161da0dfdba5edd10c9d
+  revision: d421ca43d0c081a4f4cabc2dd05162f32ba30ef5
   branch: main
   specs:
     quicsilver (0.4.0)
