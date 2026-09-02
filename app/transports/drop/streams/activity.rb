@@ -3,7 +3,7 @@ module Drop
     class Activity
       HEARTBEAT_INTERVAL = 15
 
-      def self.call(stream:, codec:, session: nil)
+      def self.call(stream:, codec:, session: nil, **)
         new(stream, codec, session).call
       end
 
