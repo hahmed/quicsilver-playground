@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/hahmed/quicsilver-rails.git
-  revision: 5da35277d5d8ad22e14128d73bda18d5decb4df5
+  revision: 2483e5a10be2d6ebea2a65511466ac43eb31c0ee
   branch: main
   specs:
     quicsilver-rails (0.1.0)
